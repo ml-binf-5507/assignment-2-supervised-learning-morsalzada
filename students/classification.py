@@ -10,6 +10,17 @@ from sklearn.model_selection import GridSearchCV
 
 
 def train_logistic_regression_grid(X_train, y_train, param_grid=None):
+    if param_grid is None:
+        param_grid = {
+            'C': [0.001, 0.01, 0.1, 1, 10, 100],
+            'penalty': ['l2'],
+            'solver': ['lbfgs']
+        }
+    model = LogisticRegression(max_iter=1000)
+
+    grid = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
+    grid.fit(X_train, y_train)
+    return grid
     """
     Train logistic regression models with grid search over hyperparameters.
     
@@ -42,10 +53,24 @@ def train_logistic_regression_grid(X_train, y_train, param_grid=None):
     # - Use GridSearchCV with cv=5
     # - Fit on training data
     # - Return fitted GridSearchCV object
-    pass
+    
 
 
 def train_knn_grid(X_train, y_train, param_grid=None):
+
+    if param_grid is None:
+        param_grid = {
+            'n_neighbors': [3, 5, 7, 9, 11, 15, 20],
+            'weights': ['uniform', 'distance'],
+            'metric': ['euclidean', 'manhattan']
+        }
+
+    model = KNeighborsClassifier()
+
+    grid = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
+    grid.fit(X_train, y_train)
+    return grid
+
     """
     Train k-NN models with grid search over hyperparameters.
     
@@ -78,10 +103,21 @@ def train_knn_grid(X_train, y_train, param_grid=None):
     # - Use GridSearchCV with cv=5
     # - Fit on training data
     # - Return fitted GridSearchCV object
-    pass
+    
 
 
 def get_best_logistic_regression(X_train, y_train, X_test, y_test, param_grid=None):
+    grid = train_logistic_regression_grid(X_train, y_train, param_grid)
+    best_model = grid.best_estimator_
+    best_params = grid.best_params_
+    cv_results_df = pd.DataFrame(grid.cv_results_)
+
+
+    return {
+        "model": best_model,
+        "best_params": best_params,
+        "cv_results_df": cv_results_df
+    }
     """
     Get best logistic regression model with test R² evaluation.
     
@@ -110,10 +146,22 @@ def get_best_logistic_regression(X_train, y_train, X_test, y_test, param_grid=No
     # - Use train_logistic_regression_grid
     # - Extract best model
     # - Return dictionary
-    pass
+    
 
 
-def get_best_knn(X_train, y_train, X_test, y_test, param_grid=None):
+def get_best_knn(X_train, y_train, param_grid=None):
+
+    grid = train_knn_grid(X_train, y_train, param_grid)
+    best_model = grid.best_estimator_
+    cv_results_df = pd.DataFrame(grid.cv_results_)
+    best_k = grid.best_params_['n_neighbors']
+
+    return {
+        "model": best_model,
+        "best_params": grid.best_params_,
+        "best_k": best_k,
+        "cv_results_df": cv_results_df
+    }
     """
     Get best k-NN model with test R² evaluation.
     
@@ -143,4 +191,4 @@ def get_best_knn(X_train, y_train, X_test, y_test, param_grid=None):
     # - Use train_knn_grid
     # - Extract best model and best_k
     # - Return dictionary
-    pass
+    

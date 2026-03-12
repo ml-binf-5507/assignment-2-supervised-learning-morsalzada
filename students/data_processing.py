@@ -9,6 +9,9 @@ from sklearn.preprocessing import StandardScaler
 
 
 def load_heart_disease_data(filepath):
+    df = pd.read_csv(filepath)
+    return df
+
     """
     Load the heart disease dataset from CSV.
     
@@ -38,13 +41,20 @@ def load_heart_disease_data(filepath):
     # Hint: Use pd.read_csv()
     # Hint: Check if file exists and raise helpful error if not
     # TODO: Implement data loading
-    pass
+
 
 
 def preprocess_data(df):
+    df = df.replace({"?": np.nan})
+    df = df.apply(pd.to_numeric, errors='ignore')
+    df = df.fillna(df.median(numeric_only=True))
+    object_cols = df.select_dtypes(include='object').columns.tolist()
+    df = pd.get_dummies(df, columns=object_cols, drop_first=True)
+    return df
+
     """
     Handle missing values, encode categorical variables, and clean data.
-    
+
     Parameters
     ----------
     df : pd.DataFrame
@@ -59,10 +69,15 @@ def preprocess_data(df):
     # - Handle missing values
     # - Encode categorical variables (e.g., sex, cp, fbs, etc.)
     # - Ensure all columns are numeric
-    pass
+
 
 
 def prepare_regression_data(df, target='chol'):
+    df = df.dropna(subset=[target])
+    y = df[target]
+    x = df.drop(columns=[target, "num"], errors='ignore')
+    return x, y
+
     """
     Prepare data for linear regression (predicting serum cholesterol).
     
@@ -82,10 +97,13 @@ def prepare_regression_data(df, target='chol'):
     # - Remove rows with missing chol values
     # - Exclude chol from features
     # - Return X (features) and y (target)
-    pass
+
 
 
 def prepare_classification_data(df, target='num'):
+    y = (df[target] > 0).astype(int)    
+    x = df.drop(columns=[target, "chol"], errors='ignore')  
+    return x, y
     """
     Prepare data for classification (predicting heart disease presence).
     
@@ -106,10 +124,16 @@ def prepare_classification_data(df, target='num'):
     # - Exclude target from features
     # - Exclude chol from features
     # - Return X (features) and y (target)
-    pass
+    
 
 
 def split_and_scale(X, y, test_size=0.2, random_state=42):
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+    scaler = StandardScaler()
+    x_train_scaled = scaler.fit_transform(x_train)
+    x_test_scaled = scaler.transform(x_test)
+    return x_train_scaled, x_test_scaled, y_train, y_test, scaler
+
     """
     Split data into train/test sets and scale features.
     
@@ -135,4 +159,19 @@ def split_and_scale(X, y, test_size=0.2, random_state=42):
     # - Fit StandardScaler on training data only
     # - Transform both train and test data
     # - Return scaled data and scaler object
-    pass
+    
+if __name__ == "__main__":
+    df = load_heart_disease_data("data/heart_disease_uci.csv")
+    print("Dataset loaded:", df.shape)
+
+    df = preprocess_data(df)
+    print("Processed dataset shape:", df.shape)
+
+    X_reg, y_reg = prepare_regression_data(df)
+    X_clf, y_clf = prepare_classification_data(df)
+    print("Regression features:", X_reg.shape, "Target:", y_reg.shape)
+    print("Classification features:", X_clf.shape, "Target:", y_clf.shape)
+
+    X_train_r, X_test_r, y_train_r, y_test_r, scaler_r = split_and_scale(X_reg, y_reg)
+    X_train_c, X_test_c, y_train_c, y_test_c, scaler_c = split_and_scale(X_clf, y_clf)
+    print("Train/test split and scaling done successfully!")
